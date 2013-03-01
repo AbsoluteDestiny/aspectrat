@@ -221,7 +221,11 @@
         var cl = $('#ar_cl').val() + "px ";
         var cr = $('#ar_cr').val() + "px ";
         var cb = $('#ar_cb').val() + "px ";
-        var iimg = '<img class="crop_img" src="http://placehold.it/' + Aspect.ix + 'x' + Aspect.iy +'/">'
+        var iimg = '<div class="crop_img" style="background: darkgrey; width: '+ Aspect.ix +'px; height: '+ Aspect.iy +'px;">'
+        iimg += '<div class="messageInner"><h4>' + (Aspect.ix + Aspect.icroplr) + 'x' + (Aspect.iy + Aspect.icroptb) + '</h4>';
+        if (Aspect.icroptb || Aspect.icroplr)
+          iimg +=  '<h5>Cropped to ' + Aspect.ix + 'x' + Aspect.iy + '</h5>';
+        iimg += '</div></div>'
         var oimg = '<img src="http://placehold.it/' + $('#ar_ox').val() + 'x' + $('#ar_oy').val() +'/000/fff">'
         jQuery('#ar_iimg').empty();
         jQuery('#ar_iimg').append(iimg);
@@ -229,6 +233,8 @@
         jQuery('#ar_oimg').append(oimg);
         jQuery('.crop_img').css("border", "solid lightcoral");
         jQuery('.crop_img').css("border-width", ct + cr + cb + cl);
+        jQuery('.crop_img').css('line-height', (Aspect.iy) + "px")
+        jQuery('.messageInner').css('line-height', (Aspect.iy) + "px")
       };
 
       Aspect.outputParChange = function(select) {
@@ -272,6 +278,10 @@
       });
 
       jQuery('.ar_input').keyup(function() {
+          return Aspect.update($(this)[0].id);
+      });
+
+      jQuery('.ar_input').click(function() {
           return Aspect.update($(this)[0].id);
       });
 

@@ -15,6 +15,16 @@
 select { line-height: 26px; }
 .row { width: 100%; }
 
+.crop_img {
+    vertical-align: middle;
+}
+.messageInner {
+    display:inline-block;
+    vertical-align: middle;
+    text-align: center;
+    width: 100%;
+    font-weight: bold;
+}
 /* -----------------------------------------
    Page Name 1
 ----------------------------------------- */
