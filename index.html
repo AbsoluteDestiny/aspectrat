@@ -10,7 +10,7 @@
   <meta name="viewport" content="width=device-width" />
 
   <title>Aspect Ratio</title>
-  
+
   <!-- Included CSS Files (Compressed) -->
   <link rel="stylesheet" href="./foundation/stylesheets/foundation.min.css">
   <link rel="stylesheet" href="./foundation/stylesheets/app.css">
@@ -18,6 +18,12 @@
   <script src="./foundation/javascripts/modernizr.foundation.js"></script>
 </head>
 <body>
+<div class="row">
+  <div class="twelve columns">
+    <h2>Aspect Rat</h2>
+    <hr />
+  </div>
+</div>
 <div class="row">
   <div class="three columns">
     <form>
@@ -38,7 +44,38 @@
             <div class="five columns">
               <input class="ar_input" type="number" id="ar_iy" value="240">
             </div>
-        </div>          
+        </div>
+        <div class="row">
+          <div class="twelve rows">
+          <ul class="accordion">
+            <li id="ar_cropaccordion">
+              <div class="title">
+                Cropping
+              </div>
+              <div class="content">
+                <div class="row">
+                  <div class="three columns centered">
+                      <label>Top:</label><input class="ar_input ar_crop_input" type="number" id="ar_ct" value="0">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="three columns">
+                      <label>Left:</label><input class="ar_input ar_crop_input" type="number" id="ar_cl" value="0">
+                  </div>
+                  <div class="three columns">
+                      <label>Right:</label><input class="ar_input ar_crop_input" type="number" id="ar_cr" value="0">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="three columns centered">
+                      <label>Bottom:</label><input class="ar_input ar_crop_input" type="number" id="ar_cb" value="0">
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+          </div>
+        </div>
       </fieldset>
     </form>
     <form>
@@ -73,8 +110,8 @@
             </select>
           </div>
         </div>
-        
-        
+
+
       </fieldset>
     </form>
   </div>
@@ -98,19 +135,19 @@
   <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
   <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
   <script src="./foundation/javascripts/foundation.min.js"></script>
-  
+
   <!-- Initialize JS Plugins -->
   <script src="./foundation/javascripts/app.js"></script>
   <script type="text/javascript">
       var Aspect = Aspect || {};
       Aspect.par_table = {
-          'c1' : {'name': "Computer 1:1", 'par': 1.0, 'dx': null, 'dy': null},
-          '720p' : {'name': '720p', 'par': 1.0, 'dx': 1280, 'dy': 720},
-          '1080p' : {'name': '1080p', 'par': 1.0, 'dx': 1920, 'dy': 1080},
-          'n4' : {'name': "NTSC DVD 4:3", 'par': 10.0 / 11.0, 'dx': 720, 'dy': 480},
-          'n16' : {'name': "NTSC DVD 16:9", 'par': 40.0 / 33.0, 'dx': 720, 'dy': 480},
-          'p4' : {'name': "PAL DVD 4:3", 'par': 12.0 / 11.0, 'dx': 720, 'dy': 576},
-          'p16' : {'name': "PAL DVD 16:9", 'par': 16.0 / 11.0, 'dx': 720, 'dy': 576},
+          'c1' : {'name': "Computer 1:1", 'par': 1.0, 'dx': null, 'dy': null, 'crop': null},
+          '720p' : {'name': '720p', 'par': 1.0, 'dx': 1280, 'dy': 720, 'crop': null},
+          '1080p' : {'name': '1080p', 'par': 1.0, 'dx': 1920, 'dy': 1080, 'crop': null},
+          'n4' : {'name': "NTSC DVD 4:3", 'par': 10.0 / 11.0, 'dx': 720, 'dy': 480, 'crop': [8, 0, 8, 0]},
+          'n16' : {'name': "NTSC DVD 16:9", 'par': 40.0 / 33.0, 'dx': 720, 'dy': 480, 'crop': [8, 0, 8, 0]},
+          'p4' : {'name': "PAL DVD 4:3", 'par': 12.0 / 11.0, 'dx': 720, 'dy': 576, 'crop': [8, 0, 8, 0]},
+          'p16' : {'name': "PAL DVD 16:9", 'par': 16.0 / 11.0, 'dx': 720, 'dy': 576, 'crop': [8, 0, 8, 0]},
       };
       Aspect.calculating = false;  // Used to shortcut the update function during calculations to avoid events re-triggering
       Aspect.last_changed = 'ar_oy';  // Stores whether we are basing our result on the width (ox) or height (oy)
@@ -141,8 +178,10 @@
           // Gather numbers from the given inputs
           Aspect.par_in = Aspect.par_table[$('#ar_inputFormat').val()].par;
           Aspect.par_out = Aspect.par_table[$('#ar_outputFormat').val()].par;
-          Aspect.ix = $('#ar_ix').val();
-          Aspect.iy = $('#ar_iy').val();
+          Aspect.icroplr = parseInt($('#ar_cl').val()) + parseInt($('#ar_cr').val());
+          Aspect.icroptb = parseInt($('#ar_ct').val()) + parseInt($('#ar_cb').val());
+          Aspect.ix = $('#ar_ix').val() - Aspect.icroplr;
+          Aspect.iy = $('#ar_iy').val() - Aspect.icroptb;
           Aspect.ox = $('#ar_ox').val();
           Aspect.oy = $('#ar_oy').val();
           Aspect.mod = $('#ar_outputMultiplier').val();
@@ -173,12 +212,23 @@
       };
 
       Aspect.update_image = function() {
-        var iimg = '<img src="http://placehold.it/' + $('#ar_ix').val() + 'x' + $('#ar_iy').val() +'/">'
+        $('.ar_crop_input').each(function(index, item) {
+          $(item).removeClass('error');
+          if ($(item).val() != 0)
+            $(item).addClass('error');
+        });
+        var ct = $('#ar_ct').val() + "px ";
+        var cl = $('#ar_cl').val() + "px ";
+        var cr = $('#ar_cr').val() + "px ";
+        var cb = $('#ar_cb').val() + "px ";
+        var iimg = '<img class="crop_img" src="http://placehold.it/' + Aspect.ix + 'x' + Aspect.iy +'/">'
         var oimg = '<img src="http://placehold.it/' + $('#ar_ox').val() + 'x' + $('#ar_oy').val() +'/000/fff">'
         jQuery('#ar_iimg').empty();
         jQuery('#ar_iimg').append(iimg);
         jQuery('#ar_oimg').empty();
         jQuery('#ar_oimg').append(oimg);
+        jQuery('.crop_img').css("border", "solid lightcoral");
+        jQuery('.crop_img').css("border-width", ct + cr + cb + cl);
       };
 
       Aspect.outputParChange = function(select) {
@@ -187,6 +237,7 @@
           Aspect.calculating = true;
           var new_x = Aspect.par_table[select.value].dx;
           var new_y = Aspect.par_table[select.value].dy;
+          var crop = Aspect.par_table[select.value].crop;
           if (select.id === 'ar_inputFormat') {
               if (new_y  && new_x) {
                   $('#ar_ix').val(new_x);
@@ -197,6 +248,13 @@
                   $('#ar_oy').val(new_y);
                   Aspect.last_changed = Aspect.last_changed || 'ar_oy';
               };
+          };
+          if (crop) {
+            $('#ar_cl').val(crop[0]);
+            $('#ar_ct').val(crop[1]);
+            $('#ar_cr').val(crop[2]);
+            $('#ar_cb').val(crop[3]);
+            $('#ar_cropaccordion').addClass('active');
           }
           Aspect.calculating = false;
 
@@ -221,6 +279,6 @@
           return Aspect.update($(this)[0].id);
       });
   </script>
-  
+
 </body>
 </html>
