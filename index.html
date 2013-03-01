@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8" />
+
+  <!-- Set the viewport width to device width for mobile -->
+  <meta name="viewport" content="width=device-width" />
+
+  <title>Aspect Ratio</title>
+  
+  <!-- Included CSS Files (Compressed) -->
+  <link rel="stylesheet" href="./foundation/stylesheets/foundation.min.css">
+  <link rel="stylesheet" href="./foundation/stylesheets/app.css">
+
+  <script src="./foundation/javascripts/modernizr.foundation.js"></script>
+</head>
+<body>
+<div class="row">
+  <div class="three columns">
+    <form>
+      <fieldset>
+        <legend>Source</legend>
+        <div class="row">
+          <div class="three columns"><label>Type:</label></div>
+          <div class="nine columns"><select class="ar_par" id="ar_inputFormat"></select></div>
+        </div>
+        <div class="row">
+          <div class="six columns"><label>Width:</label></div>
+          <div class="six columns"><label>Height:</label></div>
+        </div>
+        <div class="row">
+            <div class="five columns">
+              <input class="ar_input" type="number" id="ar_ix" value="320">
+            </div>
+            <div class="five columns">
+              <input class="ar_input" type="number" id="ar_iy" value="240">
+            </div>
+        </div>          
+      </fieldset>
+    </form>
+    <form>
+      <fieldset>
+        <legend>Output</legend>
+        <div class="row">
+          <div class="three columns"><label>Type:</label></div>
+          <div class="nine columns"><select class="ar_par" id="ar_outputFormat"></select></div>
+        </div>
+        <div class="row">
+          <div class="six columns"><label>Width:</label></div>
+          <div class="six columns"><label>Height:</label></div>
+        </div>
+        <div class="row">
+            <div class="five columns">
+              <input class="ar_input" type="number" id="ar_ox">
+            </div>
+            <div class="five columns">
+              <input class="ar_input" type="number" id="ar_oy" value="480">
+            </div>
+        </div>
+        <div class="row">
+          <div class="nine columns"><label>Make output a multiple of:</label></div>
+          <div class="three columns">
+            <select class="ar_option" id="ar_outputMultiplier">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="4">4</option>
+              <option value="8" selected>8</option>
+              <option value="16">16</option>
+              <option value="32">32</option>
+            </select>
+          </div>
+        </div>
+        
+        
+      </fieldset>
+    </form>
+  </div>
+  <div class="nine columns">
+    <dl class="tabs contained">
+      <dd class="active"><a href="#simple1">Source Preview</a></dd>
+      <dd><a href="#simple2">Output Preview</a></dd>
+    </dl>
+    <ul class="tabs-content contained">
+      <li class="active" id="simple1Tab">
+        <div id="ar_iimg"></div>
+      </li>
+      <li id="simple2Tab">
+        <div id="ar_oimg"></div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  <!-- Included JS Files (Compressed) -->
+  <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+  <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
+  <script src="./foundation/javascripts/foundation.min.js"></script>
+  
+  <!-- Initialize JS Plugins -->
+  <script src="./foundation/javascripts/app.js"></script>
+  <script type="text/javascript">
+      var Aspect = Aspect || {};
+      Aspect.par_table = {
+          'c1' : {'name': "Computer 1:1", 'par': 1.0, 'dx': null, 'dy': null},
+          '720p' : {'name': '720p', 'par': 1.0, 'dx': 1280, 'dy': 720},
+          '1080p' : {'name': '1080p', 'par': 1.0, 'dx': 1920, 'dy': 1080},
+          'n4' : {'name': "NTSC DVD 4:3", 'par': 10.0 / 11.0, 'dx': 720, 'dy': 480},
+          'n16' : {'name': "NTSC DVD 16:9", 'par': 40.0 / 33.0, 'dx': 720, 'dy': 480},
+          'p4' : {'name': "PAL DVD 4:3", 'par': 12.0 / 11.0, 'dx': 720, 'dy': 576},
+          'p16' : {'name': "PAL DVD 16:9", 'par': 16.0 / 11.0, 'dx': 720, 'dy': 576},
+      };
+      Aspect.calculating = false;  // Used to shortcut the update function during calculations to avoid events re-triggering
+      Aspect.last_changed = 'ar_oy';  // Stores whether we are basing our result on the width (ox) or height (oy)
+
+      Aspect.setUp = function() {
+          // Add aspect ratio options
+          Aspect.calculating = true;
+          for (var par in Aspect.par_table) {
+              if (Aspect.par_table.hasOwnProperty(par)) {
+                  var name = Aspect.par_table[par].name;
+                  var selected = "";
+                  if (par == "c1")
+                      selected = " selected"
+                  var option = '<option value="' + par + '"' + selected + '>' + name + '</option>';
+                  jQuery('.ar_par').append(option);
+              };
+          };
+          Aspect.calculating = false;
+      };
+
+      Aspect.update = function(input_id) {
+          // Do not update mid-calculation else weird shit happens.
+          if (Aspect.calculating) {
+              return;
+          };
+          Aspect.calculating = true;
+
+          // Gather numbers from the given inputs
+          Aspect.par_in = Aspect.par_table[$('#ar_inputFormat').val()].par;
+          Aspect.par_out = Aspect.par_table[$('#ar_outputFormat').val()].par;
+          Aspect.ix = $('#ar_ix').val();
+          Aspect.iy = $('#ar_iy').val();
+          Aspect.ox = $('#ar_ox').val();
+          Aspect.oy = $('#ar_oy').val();
+          Aspect.mod = $('#ar_outputMultiplier').val();
+
+          // Determine whether we should calculate width or height
+          if (input_id != 'ar_ox' && input_id != 'ar_oy') {
+              input_id = Aspect.last_changed || 'ar_ox';
+          };
+          Aspect.last_changed = input_id;
+
+          // Do the aspect ratio calculation
+          if (Aspect.last_changed === 'ar_ox') {
+              // Calculate height
+              var parchange = Aspect.par_out / Aspect.par_in;
+              var scale = (Aspect.ox) / (Aspect.ix);
+              var y = Aspect.iy * (parchange * scale);
+              $('#ar_oy').val(Math.round(y / Aspect.mod) * Aspect.mod);
+          } else if (Aspect.last_changed === 'ar_oy') {
+              // Calculate width
+              var parchange = Aspect.par_out / Aspect.par_in;
+              var scale = (Aspect.oy) / (Aspect.iy);
+              var x = Aspect.ix * (scale / parchange);
+              $('#ar_ox').val(Math.round(x / Aspect.mod) * Aspect.mod);
+          };
+          Aspect.update_image();
+          // Allow future calculations
+          Aspect.calculating = false;
+      };
+
+      Aspect.update_image = function() {
+        var iimg = '<img src="http://placehold.it/' + $('#ar_ix').val() + 'x' + $('#ar_iy').val() +'/">'
+        var oimg = '<img src="http://placehold.it/' + $('#ar_ox').val() + 'x' + $('#ar_oy').val() +'/000/fff">'
+        jQuery('#ar_iimg').empty();
+        jQuery('#ar_iimg').append(iimg);
+        jQuery('#ar_oimg').empty();
+        jQuery('#ar_oimg').append(oimg);
+      };
+
+      Aspect.outputParChange = function(select) {
+          // When the output PAR is changed, pick an appropriate height for that option
+          // Don't trigger the aspect calculator yet
+          Aspect.calculating = true;
+          var new_x = Aspect.par_table[select.value].dx;
+          var new_y = Aspect.par_table[select.value].dy;
+          if (select.id === 'ar_inputFormat') {
+              if (new_y  && new_x) {
+                  $('#ar_ix').val(new_x);
+                  $('#ar_iy').val(new_y);
+              };
+          } else if (select.id === 'ar_outputFormat') {
+              if (new_y) {
+                  $('#ar_oy').val(new_y);
+                  Aspect.last_changed = Aspect.last_changed || 'ar_oy';
+              };
+          }
+          Aspect.calculating = false;
+
+          // Now recalculate the width for this PAR
+          Aspect.update();
+      };
+
+      jQuery('.ar_par').change(function() {
+          return Aspect.outputParChange($(this)[0]);
+      });
+
+      jQuery(document).ready(function($) {
+          Aspect.setUp();
+          return Aspect.update(null);
+      });
+
+      jQuery('.ar_input').keyup(function() {
+          return Aspect.update($(this)[0].id);
+      });
+
+      jQuery('.ar_option').change(function() {
+          return Aspect.update($(this)[0].id);
+      });
+  </script>
+  
+</body>
+</html>
